@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto-questionnaires — TDAH</title>
+<style>
+:root{
+  --ivory:#f3ecdf; --paper:#fff; --cream:#f5f0e7; --line:#dcd3c4; --ink:#1f2540;
+  --accent:#2c7a78; --accent-d:#1f5a58; --accent-l:#5aa3a0;
+  --tint:#e3efee; --soft:#eef6f5; --accent-ink:#234e4c;
+  --danger:#b3473a; --danger-line:#e3b7b0; --danger-soft:#f7ebe8;
+  --shadow:0 1px 3px rgba(31,37,64,.06),0 1px 2px rgba(31,37,64,.04);
+  --radius:16px;
+  --font:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--font);background:var(--ivory);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.no-print{}
+button{font-family:inherit}
+
+/* ===== Topbar ===== */
+.topbar{position:sticky;top:0;z-index:40;background:rgba(243,236,223,.92);backdrop-filter:saturate(140%) blur(8px);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:9px 18px}
+.brand{display:flex;align-items:center;gap:10px;border:none;background:none;cursor:pointer;padding:4px 6px;border-radius:10px}
+.brand:hover{background:rgba(31,37,64,.05)}
+.brand .logo{width:40px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-d));display:grid;place-items:center;color:#fff;font-weight:800;font-size:13.5px;flex:none}
+.brand .bt{font-weight:800;font-size:15px;color:var(--ink);letter-spacing:.01em;white-space:nowrap}
+.hamb{display:none;border:1px solid var(--line);background:var(--paper);border-radius:10px;width:38px;height:38px;cursor:pointer;align-items:center;justify-content:center}
+.hamb span,.hamb span::before,.hamb span::after{content:"";display:block;width:17px;height:2px;background:var(--ink);position:relative}
+.hamb span::before{position:absolute;top:-5px}.hamb span::after{position:absolute;top:5px}
+.spacer{flex:1}
+.patientchip{display:flex;align-items:center;gap:9px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 12px 4px 5px;box-shadow:var(--shadow)}
+.patientchip.empty{opacity:.7}
+.patientchip .pav{width:28px;height:28px;border-radius:50%;background:var(--tint);color:var(--accent-d);font-weight:800;font-size:12px;display:grid;place-items:center;flex:none}
+.patientchip .pwho{font-weight:700;font-size:13px;line-height:1.15;white-space:nowrap}
+.patientchip .pdob{font-size:11.5px;color:#7a7f8c;line-height:1.15}
+.tools{display:flex;align-items:center;gap:8px}
+.tbtn{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:var(--shadow)}
+.tbtn:hover{border-color:var(--accent-l);color:var(--accent-d)}
+.tbtn svg{width:15px;height:15px}
+
+/* ===== Layout ===== */
+.scrim{display:none;position:fixed;inset:0;background:rgba(31,37,64,.4);z-index:44}
+.layout{max-width:1180px;margin:0 auto;display:flex;gap:26px;padding:24px 18px 60px;align-items:flex-start}
+.sidebar{width:252px;flex:none;position:sticky;top:74px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);max-height:calc(100vh - 96px);overflow:auto}
+main{flex:1;min-width:0}
+
+/* ===== Sidebar links ===== */
+.sb-link{display:flex;align-items:center;gap:11px;width:100%;border:none;background:none;text-align:left;padding:9px 10px;border-radius:11px;cursor:pointer;color:var(--ink);margin-bottom:2px}
+.sb-link:hover{background:var(--soft)}
+.sb-link.active{background:var(--tint)}
+.sb-link.active .nm{color:var(--accent-d)}
+.sb-link .dot{width:11px;height:11px;border-radius:50%;background:var(--qc,var(--accent));flex:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--qc,var(--accent)) 16%,transparent)}
+.sb-link .lab{flex:1;min-width:0}
+.sb-link .nm{font-weight:700;font-size:13.5px;display:block;line-height:1.25}
+.sb-link .st{font-size:11.5px;color:#8a8f9e;display:block;line-height:1.2;margin-top:1px}
+.sb-link .chk{flex:none;color:var(--accent);font-weight:800;font-size:14px}
+.sb-link.home-link svg{width:17px;height:17px;flex:none;color:var(--accent-d)}
+.sb-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9aa0b4;margin:14px 4px 6px}
+.sb-foot{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:11.5px;color:#8a8f9e;line-height:1.45}
+.sb-prog{margin:6px 4px 0}
+.sb-prog .bar{height:6px;border-radius:99px;background:var(--cream);overflow:hidden}
+.sb-prog .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-l),var(--accent));border-radius:99px;transition:width .3s}
+.sb-prog .lab{font-size:11px;color:#8a8f9e;margin-top:4px;font-weight:700}
+
+/* ===== Masthead ===== */
+.masthead{margin:4px 2px 20px}
+.kicker{font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.masthead h1{margin:0;font-size:30px;line-height:1.12;font-weight:800;letter-spacing:-.01em;color:var(--ink)}
+.subtitle{margin:7px 0 0;font-size:15px;color:#5b6178;font-weight:600}
+.rule{height:3px;width:54px;background:var(--accent);border-radius:99px;margin:14px 0 12px}
+.lead{margin:0;font-size:15px;color:#42475e;max-width:none}
+
+/* ===== Cards / forms ===== */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px;margin:0 0 18px}
+.card h2{margin:0 0 4px;font-size:17px;font-weight:800;color:var(--ink)}
+.muted{color:#6a7188;font-size:13.5px}
+.note{background:var(--soft);border:1px solid color-mix(in srgb,var(--accent) 18%,var(--line));border-left:4px solid var(--accent-l);border-radius:12px;padding:12px 15px;font-size:13.4px;color:var(--accent-ink);margin:0 0 18px;line-height:1.5}
+
+/* Encart sauvegarde (accueil) */
+.timing{font-size:13.5px;color:#5b6178;margin:14px 0 16px;display:flex;align-items:center;gap:8px;line-height:1.5}
+.timing .ti{font-size:17px;line-height:1;flex:none}
+.saveinfo{display:flex;gap:15px;align-items:flex-start;background:linear-gradient(135deg,var(--soft),#fff);border:1.5px solid var(--accent-l);border-radius:14px;padding:16px 18px;margin:0 0 18px;box-shadow:var(--shadow)}
+.saveinfo .si-ic{font-size:28px;line-height:1;flex:none}
+.saveinfo .si-body{flex:1;min-width:0}
+.saveinfo .si-t{display:block;font-size:15px;font-weight:800;color:var(--accent-d);margin-bottom:5px}
+.saveinfo p{margin:0 0 9px;font-size:13.5px;color:#4a5066;line-height:1.5}
+.saveinfo ul{margin:0 0 13px;padding:0;list-style:none}
+.saveinfo li{font-size:13.5px;color:#39405a;margin:7px 0;line-height:1.5;padding-left:2px}
+.saveinfo .fmt{background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-family:"Courier New",monospace;font-size:12px;color:var(--accent-d);font-weight:700}
+
+/* Bloc copier (page de fin) */
+.copyblock{margin-top:14px;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+.copyblock .cb-h{margin:0 0 5px;font-size:14px;font-weight:800;color:var(--accent-d)}
+.copyblock .cb-note{margin:0 0 11px;font-size:13px;color:#5b6178;line-height:1.55}
+.copyblock .cb-sub{font-size:12.5px;color:#5b6178;margin:0 0 6px;font-weight:700}
+.copyblock textarea{width:100%;min-height:158px;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font:inherit;font-size:13px;background:#fff;resize:vertical;line-height:1.55;color:#2a2f47}
+.copyblock textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--tint)}
+.copyblock .copybtn{margin-top:11px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:4px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.field label{font-size:12.5px;font-weight:700;color:#6a7188}
+.field input{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:14.5px;background:#fff}
+.field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--tint)}
+
+.bigstart{border:none;background:linear-gradient(135deg,var(--accent),var(--accent-d));color:#fff;font-weight:800;font-size:15px;padding:13px 22px;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:10px;box-shadow:0 2px 8px color-mix(in srgb,var(--accent) 35%,transparent)}
+.bigstart:hover{filter:brightness(1.05)}
+.bigstart svg{width:18px;height:18px}
+
+/* ===== Home questionnaire cards ===== */
+.qcards{display:grid;gap:12px;margin-top:4px}
+.qcard{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:13px;background:#fff;padding:14px 16px;cursor:pointer;box-shadow:var(--shadow);text-align:left;width:100%;font:inherit}
+.qcard:hover{border-color:var(--qc);background:var(--soft)}
+.qcard .qnum{width:38px;height:38px;border-radius:10px;background:var(--qtint,var(--tint));color:var(--qc,var(--accent-d));font-weight:800;font-size:15px;display:grid;place-items:center;flex:none}
+.qcard .qmid{flex:1;min-width:0}
+.qcard .qttl{display:block;font-weight:800;font-size:14.5px;color:var(--ink);margin-bottom:4px}
+.qcard .qsub{display:block;font-size:12.5px;color:#6a7188;line-height:1.4}
+.qcard .qmeta{display:block;font-size:11.5px;color:#9aa0b4;font-weight:700;margin-top:6px}
+.badge{font-size:11px;font-weight:800;border-radius:999px;padding:3px 11px;white-space:nowrap;flex:none}
+.badge.todo{background:var(--cream);color:#8a8f9e;border:1px solid var(--line)}
+.badge.doing{background:var(--qtint,var(--tint));color:var(--qc,var(--accent-d))}
+.badge.done{background:var(--accent);color:#fff}
+
+/* ===== Likert grid ===== */
+.qhead{display:flex;align-items:flex-start;gap:12px;justify-content:space-between;flex-wrap:wrap;margin-bottom:6px}
+.instr{background:var(--soft);border-left:3px solid var(--accent-l);border-radius:10px;padding:11px 14px;color:var(--accent-ink);font-size:13.5px;margin:0 0 16px;line-height:1.5}
+.tblwrap{border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);background:#fff}
+table.likert{border-collapse:collapse;width:100%;min-width:560px}
+table.likert thead th{position:sticky;top:var(--topbar-h,50px);z-index:6;background:var(--accent);color:#fff;font-size:11.5px;font-weight:700;padding:8px 9px;text-align:center;vertical-align:middle;line-height:1.18;box-shadow:0 2px 6px rgba(31,37,64,.12);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+table.likert thead th.h-item{text-align:left;min-width:200px;vertical-align:middle}
+table.likert thead th.h-num{width:42px}
+table.likert thead th.h-cm{width:40px}
+table.likert tbody td{border-bottom:1px solid var(--line);padding:9px 8px;vertical-align:middle}
+table.likert tbody tr:hover{background:var(--soft)}
+table.likert tbody tr.miss td{background:var(--danger-soft)}
+table.likert tbody tr.miss:hover td{background:#f5e2dd}
+.itemnum{width:42px;text-align:center}
+.itemnum span{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--tint);color:var(--accent-d);font-weight:800;font-size:12.5px}
+.itemtext{font-size:13.6px;color:#2a2f47;line-height:1.4;padding-right:6px}
+.cellradio{text-align:center;width:1%;white-space:nowrap;cursor:pointer}
+.cellradio .tick{display:inline-block;width:20px;height:20px;border-radius:50%;border:2px solid var(--accent-l);background:#fff;transition:.12s;position:relative}
+.cellradio:hover .tick{border-color:var(--accent-d)}
+.cellradio.on .tick{border-color:var(--accent-d);background:var(--accent)}
+.cellradio.on .tick::after{content:"";position:absolute;inset:3px;border-radius:50%;background:#fff}
+.cbtn{border:1px solid var(--line);background:#fff;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:14px;line-height:1;display:inline-grid;place-items:center;color:#9aa0b4}
+.cbtn:hover{border-color:var(--accent-l);color:var(--accent-d)}
+.cbtn.has{background:var(--tint);border-color:var(--accent-l);color:var(--accent-d)}
+.cmtrow td{background:var(--soft);padding:0 8px 11px}
+.cmtbox{display:flex;flex-direction:column;gap:5px;padding-top:9px}
+.cmtbox label{font-size:11.5px;font-weight:700;color:var(--accent-d)}
+.cmtbox textarea{width:100%;border:1px dashed var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:13px;resize:vertical;background:#fff;min-height:54px}
+.cmtbox textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--tint)}
+
+/* ===== Actions / nav ===== */
+.actions{display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap}
+.actions .gap{flex:1}
+.btn{border:1px solid var(--accent-d);background:var(--accent);color:#fff;border-radius:11px;padding:11px 20px;font-size:14px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{filter:brightness(1.05)}
+.btn svg{width:16px;height:16px}
+.btn.ghost{background:#fff;color:var(--accent-d);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--accent-l);background:var(--soft);filter:none}
+.btn.danger{background:#fff;color:var(--danger);border-color:var(--danger-line)}
+.btn.danger:hover{background:var(--danger-soft);filter:none}
+.btn[disabled]{opacity:.5;cursor:not-allowed;filter:none}
+.qprog{font-size:12.5px;color:#8a8f9e;font-weight:700;text-align:center;margin:14px 0 0}
+
+/* ===== Thanks ===== */
+.thanks-hero{text-align:center;padding:8px 0 4px}
+.thanks-hero .big{width:74px;height:74px;border-radius:50%;background:var(--tint);display:grid;place-items:center;margin:0 auto 14px}
+.thanks-hero .big svg{width:38px;height:38px;color:var(--accent-d)}
+.step{display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--line)}
+.step:last-child{border-bottom:none}
+.step .sn{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:14px;display:grid;place-items:center;flex:none}
+.step .sb{flex:1;min-width:0}
+.step h3{margin:2px 0 5px;font-size:15px;font-weight:800;color:var(--ink)}
+.step p{margin:0 0 10px;font-size:13.5px;color:#5b6178}
+.mailrow{display:flex;gap:10px;flex-wrap:wrap}
+.emailpick{margin:0 0 12px;background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+.emailpick .er{display:flex;align-items:center;gap:9px;font-size:13px;color:#2a2f47;cursor:pointer;padding:4px 0}
+.emailpick .er input[type=radio]{width:16px;height:16px;accent-color:var(--accent)}
+.emailpick .ed{font-size:12px;color:#8a8f9e;margin-left:25px}
+.emailpick input[type=email]{margin-left:25px;margin-top:4px;width:calc(100% - 25px);border:1px solid var(--line);border-radius:9px;padding:8px 11px;font:inherit;font-size:13.5px;background:#fff}
+.emailpick input[type=email]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--tint)}
+.dest-now{font-size:12.5px;color:var(--accent-d);font-weight:700;margin:2px 0 12px;word-break:break-all}
+
+/* ===== Footer ===== */
+.sitefoot{max-width:1180px;margin:0 auto;padding:24px 18px 40px;font-size:12px;color:#8a8f9e;text-align:center;border-top:1px solid var(--line)}
+
+/* ===== Modal / toast ===== */
+.modal{display:none;position:fixed;inset:0;background:rgba(31,37,64,.45);z-index:60;align-items:center;justify-content:center;padding:20px}
+.modal.on{display:flex}
+.modalbox{background:#fff;border-radius:16px;max-width:480px;width:100%;padding:24px 26px;box-shadow:0 10px 40px rgba(31,37,64,.3)}
+.modalbox h3{margin:0 0 10px;font-size:17px;color:var(--ink)}
+.modalbox p{margin:0 0 8px;font-size:13.7px;color:#5b6178;line-height:1.5}
+.modalbox ul{margin:6px 0 14px;padding-left:20px;font-size:13.5px;color:#5b6178}
+.modalbox .ma{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:70;box-shadow:0 6px 24px rgba(31,37,64,.4)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:980px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:280px;max-height:none;border-radius:0;z-index:45;transform:translateX(-100%);transition:transform .25s}
+  .sidebar.open{transform:translateX(0)}
+  .scrim.open{display:block}
+  .hamb{display:flex}
+  .layout{padding-top:20px}
+}
+@media(max-width:760px){
+  .row2{grid-template-columns:1fr}
+  .masthead h1{font-size:25px}
+  .patientchip .pwho,.patientchip .pdob{display:none}
+  .tbtn .lab{display:none}
+  .tbtn{padding:8px}
+}
+@media(max-width:620px){
+  .card{padding:16px 15px}
+  .topbar-in{padding:8px 12px;gap:9px}
+  .layout{padding-left:12px;padding-right:12px}
+  .tblwrap{overflow-x:auto}
+}
+
+/* ===== Print (PDF) ===== */
+@page{size:A4;margin:14mm 15mm}
+.printdoc{display:none}
+@media print{
+  .topbar,.sidebar,.scrim,main,.sitefoot,.modal,.toast{display:none !important}
+  body{background:#fff}
+  .printdoc{display:block;color:#1f2540;font-size:11px}
+  .printdoc *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .p-title{font-size:18px;font-weight:800;margin:0 0 2px}
+  .p-sub{font-size:11px;color:#5b6178;margin:0 0 10px}
+  .p-id{width:100%;border-collapse:collapse;margin:0 0 14px}
+  .p-id td{border:1px solid #cfc6b6;padding:5px 8px;font-size:11px}
+  .p-id td.k{background:#f3ecdf;font-weight:700;width:130px}
+  .p-q{margin:14px 0 4px;page-break-inside:avoid}
+  .p-q h2{font-size:13px;font-weight:800;color:#1f5a58;margin:0 0 5px;padding-bottom:3px;border-bottom:2px solid #5aa3a0}
+  .p-tbl{width:100%;border-collapse:collapse}
+  .p-tbl th{background:#1f5a58;color:#fff;font-size:9.5px;font-weight:700;padding:4px 6px;text-align:left}
+  .p-tbl th.c{text-align:center}
+  .p-tbl td{border-bottom:1px solid #dcd3c4;padding:4px 6px;font-size:10px;vertical-align:top}
+  .p-tbl td.n{text-align:center;font-weight:700;width:26px;color:#1f5a58}
+  .p-tbl td.a{text-align:center;font-weight:700;white-space:nowrap;width:130px;color:#1f5a58}
+  .p-tbl tr.miss td{background:#f7ebe8}
+  .p-cmt{font-style:italic;color:#5b6178;font-size:9.5px;padding:2px 6px 6px 32px;border-bottom:1px solid #dcd3c4}
+  .p-code{margin-top:20px;border:1.5px dashed #9aa0b4;border-radius:8px;padding:10px 12px;page-break-inside:avoid}
+  .p-code-h{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#5b6178;margin:0 0 4px}
+  .p-code-note{font-size:9px;color:#8a8f9e;margin:0 0 6px}
+  .p-code-val{font-family:"Courier New",monospace;font-size:8.5px;word-break:break-all;line-height:1.45;color:#1f2540}
+  .p-foot{margin-top:14px;padding-top:8px;border-top:1px solid #dcd3c4;font-size:9px;color:#8a8f9e;text-align:center}
+}
+</style>
+</head>
+<body>
+<!-- ===== Topbar ===== -->
+<div class="topbar no-print">
+  <div class="topbar-in">
+    <button class="hamb" id="hamb" aria-label="Menu"><span></span></button>
+    <button class="brand" id="brandHome">
+      <span class="logo">TDAH</span>
+      <span class="bt">Auto-questionnaires</span>
+    </button>
+    <div class="spacer"></div>
+    <div class="patientchip empty" id="patientChip">
+      <span class="pav" id="pAv">?</span>
+      <span><span class="pwho" id="pWho">Identité à compléter</span><span class="pdob" id="pDob"></span></span>
+    </div>
+    <div class="tools">
+      <button class="tbtn" id="saveBtn" title="Enregistrer mes réponses (fichier .json)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span class="lab">Enregistrer</span>
+      </button>
+      <button class="tbtn" id="loadBtn" title="Reprendre une session enregistrée">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span class="lab">Reprendre</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="layout">
+  <aside class="sidebar no-print" id="sidebar"></aside>
+  <main id="app"></main>
+</div>
+<footer class="sitefoot no-print">Outils conçus par le D<sup>r</sup> Clémentine Doussy — à usage soignant, dans le cadre de consultations spécialisées.</footer>
+
+<div class="modal no-print" id="modal"><div class="modalbox" id="modalbox"></div></div>
+<div class="toast no-print" id="toast"></div>
+<div class="printdoc" id="printdoc"></div>
+<input type="file" id="loadInput" accept="application/json,.json" style="display:none">
+
+<script>
+/* ============================================================
+   DONNÉES DES 2 QUESTIONNAIRES TDAH (WURS + ASRS)
+   ============================================================ */
+const Q = [{"id": "WURS", "title": "Questionnaire 1 — WURS", "short": "WURS", "color": "#E1ECF5", "subtitle": "Vos souvenirs de votre enfance, avant l’âge de 12 ans", "desc": "La façon dont vous vous comportiez et vous sentiez durant votre enfance.", "instruction": "Durant mon enfance, avant 12 ans (en 6ᵉ année), j’étais (ou j’avais)… Pour chaque proposition, cochez la seule réponse qui correspond le mieux à vos souvenirs.", "opts": ["Pas du tout ou très légèrement", "Légèrement", "Modérément", "Assez", "Beaucoup"], "items": [{"n": 1, "text": "Actif(ve), agité(e), toujours à courir"}, {"n": 2, "text": "Peur des choses"}, {"n": 3, "text": "Des problèmes de concentration, facilement distrait(e)"}, {"n": 4, "text": "Anxieux(se), se faisant du souci"}, {"n": 5, "text": "Nerveux(se), ne tenant pas en place"}, {"n": 6, "text": "Inattentif(ve), rêveur(se)"}, {"n": 7, "text": "Facilement en colère, « soupe au lait »"}, {"n": 8, "text": "Timide, sensible"}, {"n": 9, "text": "Des éclats d’humeur, des accès de colère"}, {"n": 10, "text": "Des difficultés à me tenir aux choses, à mener mes projets jusqu’à la fin, à finir les choses commencées"}, {"n": 11, "text": "Têtu(e), obstiné(e)"}, {"n": 12, "text": "Triste ou cafardeux(se), déprimé(e), malheureux(se)"}, {"n": 13, "text": "Imprudent(e), casse-cou, faisant les quatre cents coups"}, {"n": 14, "text": "Ne prenant pas plaisir à faire les choses, insatisfait(e) de la vie"}, {"n": 15, "text": "Désobéissant(e) à mes parents, rebelle, effronté(e)"}, {"n": 16, "text": "Une mauvaise opinion de moi-même"}, {"n": 17, "text": "Irritable"}, {"n": 18, "text": "Sociable, amical(e), plaisir à la compagnie des autres"}, {"n": 19, "text": "Négligent(e), désordonné(e)"}, {"n": 20, "text": "D’humeur changeante, avec des hauts et des bas"}, {"n": 21, "text": "En colère"}, {"n": 22, "text": "Des amis, populaire"}, {"n": 23, "text": "Bien organisé(e), ordonné(e), soigné(e)"}, {"n": 24, "text": "Impulsif(ve), agissant sans réfléchir"}, {"n": 25, "text": "Tendance à être immature"}, {"n": 26, "text": "Culpabilisé(e), plein(e) de regrets"}, {"n": 27, "text": "Une perte du contrôle de moi-même"}, {"n": 28, "text": "Tendance à être ou à agir de façon irrationnelle"}, {"n": 29, "text": "Impopulaire auprès des autres enfants, ne gardant pas longtemps mes amis, ne m’entendant pas avec les autres enfants"}, {"n": 30, "text": "Mal coordonné(e), ne participant pas aux sports"}, {"n": 31, "text": "Effrayé(e), de perdre le contrôle de moi-même"}, {"n": 32, "text": "Bien coordonné(e), le(a) premier(e) choisi(e) pour jouer"}, {"n": 33, "text": "Un garçon manqué (pour les femmes seulement)"}, {"n": 34, "text": "Fugueur(se) de la maison"}, {"n": 35, "text": "Impliqué(e) dans des bagarres"}, {"n": 36, "text": "Taquin(e) envers les autres enfants"}, {"n": 37, "text": "Meneur(se), tyrannique"}, {"n": 38, "text": "Du mal à me réveiller"}, {"n": 39, "text": "Trop facilement mené(e), à la suite des autres"}, {"n": 40, "text": "Du mal à voir les choses du point de vue de quelqu'un d’autre"}, {"n": 41, "text": "Des ennuis avec les autorités, l’école, convoqué(e) au bureau du proviseur"}, {"n": 42, "text": "Des ennuis avec la police, inculpé(e), détenu(e)"}, {"n": 43, "text": "Des maux de tête"}, {"n": 44, "text": "Des maux de ventre"}, {"n": 45, "text": "De la constipation"}, {"n": 46, "text": "De la diarrhée"}, {"n": 47, "text": "Des allergies alimentaires"}, {"n": 48, "text": "D’autres allergies"}, {"n": 49, "text": "Une énurésie nocturne (pipi au lit)"}, {"n": 50, "text": "Dans l'ensemble un(e) bon(ne) élève, rapide"}, {"n": 51, "text": "Dans l'ensemble un(e) mauvais(e) élève, apprenant lentement"}, {"n": 52, "text": "Un(e) lecteur(rice) lent(e)"}, {"n": 53, "text": "Lent(e) pour apprendre à lire"}, {"n": 54, "text": "Des problèmes d'inversion de lettres"}, {"n": 55, "text": "Des difficultés en orthographe"}, {"n": 56, "text": "Des difficultés en mathématiques ou avec les chiffres"}, {"n": 57, "text": "Une mauvaise écriture"}, {"n": 58, "text": "Capable de lire correctement, mais n’ayant jamais vraiment pris plaisir à lire"}, {"n": 59, "text": "En dessous de son potentiel"}, {"n": 60, "text": "Redoublé des classes (quelles classes ?)"}, {"n": 61, "text": "Été exclu(e) ou renvoyé(e) (quelles classes ?)"}], "tint": "#e7f0f8"}, {"id": "ASRS", "title": "Questionnaire 2 — ASRS", "short": "ASRS", "color": "#F6E9DF", "subtitle": "Votre fonctionnement au cours des 6 derniers mois", "desc": "La façon dont vous vous êtes senti et comporté ces six derniers mois.", "instruction": "Pour chaque question, cochez la case qui correspond le mieux à comment vous vous êtes senti ou conduit au cours des six derniers mois. Une seule réponse par question.", "opts": ["Jamais", "Rarement", "Parfois", "Souvent", "Très souvent"], "items": [{"n": 1, "text": "À quelle fréquence avez-vous de la difficulté à finaliser un projet, une fois que le gros du travail a été effectué ?"}, {"n": 2, "text": "À quelle fréquence avez-vous de la difficulté à établir les priorités lorsque vous devez effectuer une tâche qui requiert de l’organisation ?"}, {"n": 3, "text": "À quelle fréquence avez-vous de la difficulté à vous souvenir où vous vous rendez pour vos obligations sociales ?"}, {"n": 4, "text": "À quelle fréquence repoussez-vous ou évitez-vous les tâches qui nécessitent beaucoup de concentration ?"}, {"n": 5, "text": "À quelle fréquence ressentez-vous une bougeotte motrice de vos mains ou vos pieds lorsque vous êtes resté dans une position assise pour une longue période ?"}, {"n": 6, "text": "À quelle fréquence vous sentez-vous hyperactif ou contraint lorsque vous devez rester en place, à quelle fréquence vous sentez-vous comme une dynamo ?"}, {"n": 7, "text": "À quelle fréquence, lorsque vous devez travailler sur un projet long et ennuyeux, faites-vous des fautes d’inattention ?"}, {"n": 8, "text": "À quelle fréquence, lorsque vous devez effectuer une tâche ennuyeuse et répétitive, avez-vous de la difficulté à rester concentré sur ce que vous faites ?"}, {"n": 9, "text": "À quelle fréquence avez-vous de la difficulté à rester concentré sur ce que les gens vous disent, même lorsqu’ils vous parlent directement ?"}, {"n": 10, "text": "À quelle fréquence, à la maison ou au travail, placez-vous des objets au mauvais endroit ou avez-vous de la difficulté à les retrouver ?"}, {"n": 11, "text": "À quelle fréquence êtes-vous distrait par les activités et les bruits qui vous entourent ?"}, {"n": 12, "text": "À quelle fréquence devez-vous quitter des réunions ou d’autres situations au cours desquelles vous êtes resté assis ?"}, {"n": 13, "text": "À quelle fréquence vous sentez-vous nerveux ou agité ?"}, {"n": 14, "text": "À quelle fréquence, lorsque vous avez du temps pour vous, avez-vous de la difficulté à décompresser ou à relaxer ?"}, {"n": 15, "text": "À quelle fréquence monopolisez-vous les gens lorsque vous vous retrouvez dans des rencontres sociales ?"}, {"n": 16, "text": "À quelle fréquence, lorsque vous conversez avec des gens, avez-vous tendance à terminer leurs phrases avant qu’ils ne puissent le faire ?"}, {"n": 17, "text": "À quelle fréquence avez-vous de la difficulté à attendre votre tour lorsque vous vous retrouvez dans une situation nécessitant d’intervenir à tour de rôle ?"}, {"n": 18, "text": "À quelle fréquence dérangez-vous les autres lorsqu’ils sont occupés ?"}], "tint": "#fbf1e9"}];
+
+/* ============================================================
+   CONFIGURATION
+   ============================================================ */
+const DEST_DEFAULT = "clementine.doussy@ch-valvert.fr";
+const CODE_PREFIX  = "TDAH1:";          // préfixe relu par le fichier de cotation
+const APP_ID       = "TDAH-autoq";
+const TOTAL        = Q.reduce((s,q)=>s+q.items.length,0);
+
+/* Palette d'accent par questionnaire (appliquée à tout le chrome) */
+const PALETTES = {
+  WURS:{accent:"#3a6ea8",accentD:"#2a5384",accentL:"#6f9bcb",tint:"#e7f0f8",soft:"#f1f6fb",ink:"#244766"},
+  ASRS:{accent:"#b9683b",accentD:"#8f4d29",accentL:"#d49a76",tint:"#fbf1e9",soft:"#fdf6f0",ink:"#7a4222"}
+};
+const HOME_PAL = {accent:"#2c7a78",accentD:"#1f5a58",accentL:"#5aa3a0",tint:"#e3efee",soft:"#eef6f5",ink:"#234e4c"};
+const QMAP = {}; Q.forEach(q=>QMAP[q.id]=q);
+
+/* ============================================================
+   ÉTAT
+   ============================================================ */
+function freshArrays(){
+  const ans={}, comments={};
+  Q.forEach(q=>{ ans[q.id]=q.items.map(()=>null); comments[q.id]=q.items.map(()=>""); });
+  return {ans,comments};
+}
+const _fa = freshArrays();
+const state = {
+  view:"home",            // home | quest | thanks
+  qi:0,                   // index du questionnaire courant
+  id:{nom:"",prenom:"",naissance:"",dateJour:""},
+  ans:_fa.ans,
+  comments:_fa.comments,
+  destEmail:DEST_DEFAULT,
+  _code:""
+};
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const todayISO = ()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+function frDate(iso){ if(!iso) return ""; const p=iso.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:iso; }
+function initials(){ const n=(state.id.nom||"").trim(),p=(state.id.prenom||"").trim(); return ((p[0]||"")+(n[0]||"")).toUpperCase()||"?"; }
+function answered(qid){ return state.ans[qid].filter(v=>v!==null).length; }
+function isComplete(qid){ return answered(qid)===QMAP[qid].items.length; }
+function isStarted(qid){ return answered(qid)>0; }
+function totalAnswered(){ return Q.reduce((s,q)=>s+answered(q.id),0); }
+
+function applyAccent(pal){
+  const r=document.documentElement.style;
+  r.setProperty('--accent',pal.accent);
+  r.setProperty('--accent-d',pal.accentD);
+  r.setProperty('--accent-l',pal.accentL);
+  r.setProperty('--tint',pal.tint);
+  r.setProperty('--soft',pal.soft);
+  r.setProperty('--accent-ink',pal.ink);
+}
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),2400); }
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function goHome(){ state.view="home"; applyAccent(HOME_PAL); closeNav(); render(); }
+function openQ(i){ state.qi=i; state.view="quest"; applyAccent(PALETTES[Q[i].id]); closeNav(); render(); }
+function goThanks(){ state.view="thanks"; applyAccent(HOME_PAL); closeNav(); render(); }
+
+function closeNav(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('scrim').classList.remove('open'); }
+document.getElementById('hamb').onclick=()=>{ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('scrim').classList.toggle('open'); };
+document.getElementById('scrim').onclick=closeNav;
+document.getElementById('brandHome').onclick=goHome;
+
+/* ============================================================
+   CHROME : patientchip + sidebar
+   ============================================================ */
+function refreshChrome(){
+  const has=(state.id.nom||state.id.prenom);
+  const chip=document.getElementById('patientChip');
+  chip.classList.toggle('empty',!has);
+  document.getElementById('pAv').textContent=has?initials():'?';
+  document.getElementById('pWho').textContent=has?((state.id.nom||'').toUpperCase()+' '+(state.id.prenom||'')).trim():'Identité à compléter';
+  document.getElementById('pDob').textContent=state.id.naissance?('né(e) le '+frDate(state.id.naissance)):'';
+  renderSidebar();
+}
+function renderSidebar(){
+  let h='<button class="sb-link home-link'+(state.view==='home'?' active':'')+'" id="sbHome">'
+    +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>'
+    +'<span class="lab"><span class="nm">Accueil</span></span></button>';
+  h+='<div class="sb-h">Les questionnaires</div>';
+  Q.forEach((q,i)=>{
+    const a=answered(q.id), n=q.items.length, done=isComplete(q.id), started=isStarted(q.id);
+    const st = done?('Terminé · '+n+'/'+n) : (started?('En cours · '+a+'/'+n):(n+' questions'));
+    const active = state.view==='quest' && state.qi===i;
+    h+='<button class="sb-link'+(active?' active':'')+'" data-i="'+i+'" style="--qc:'+PALETTES[q.id].accent+'">'
+      +'<span class="dot"></span>'
+      +'<span class="lab"><span class="nm">'+esc(q.short)+'</span><span class="st">'+st+'</span></span>'
+      +(done?'<span class="chk">&#10003;</span>':'')
+      +'</button>';
+  });
+  const tot=totalAnswered(), pct=Math.round(tot/TOTAL*100);
+  h+='<div class="sb-prog"><div class="bar"><i style="width:'+pct+'%"></i></div><div class="lab">'+tot+' / '+TOTAL+' réponses ('+pct+'%)</div></div>';
+  h+='<div class="sb-foot">Tout reste dans ce navigateur — rien n\'est envoyé tant que vous n\'avez pas terminé. Pensez à enregistrer (.json) si vous souhaitez faire une pause.</div>';
+  const sb=document.getElementById('sidebar'); sb.innerHTML=h;
+  document.getElementById('sbHome').onclick=goHome;
+  sb.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>openQ(+b.dataset.i));
+}
+
+/* ============================================================
+   RENDER (dispatcher)
+   ============================================================ */
+const app = document.getElementById('app');
+function render(){
+  window.scrollTo(0,0);
+  refreshChrome();
+  if(state.view==='home')   return renderHome();
+  if(state.view==='thanks') return renderThanks();
+  return renderQuest();
+}
+
+/* ---------- Accueil ---------- */
+function renderHome(){
+  let cards='<div class="qcards">';
+  Q.forEach((q,i)=>{
+    const pal=PALETTES[q.id], a=answered(q.id), n=q.items.length, done=isComplete(q.id), started=isStarted(q.id);
+    const badge = done?'<span class="badge done">Terminé</span>':(started?'<span class="badge doing">'+a+'/'+n+'</span>':'<span class="badge todo">À faire</span>');
+    cards+='<button class="qcard" data-i="'+i+'" style="--qc:'+pal.accent+';--qtint:'+pal.tint+'">'
+      +'<span class="qnum">'+(i+1)+'</span>'
+      +'<span class="qmid"><span class="qttl">'+esc(q.short)+'</span>'
+      +'<span class="qsub">'+esc(q.subtitle||'')+'</span>'
+      +'<span class="qmeta">'+n+' questions</span></span>'
+      +badge+'</button>';
+  });
+  cards+='</div>';
+
+  app.innerHTML='<div class="masthead">'
+    +'<h1>Vos auto-questionnaires TDAH</h1>'
+    +'<div class="rule"></div>'
+    +'<p class="lead">Ces deux questionnaires explorent les difficultés d\'attention, d\'agitation et d\'impulsivité, dans l\'enfance puis au cours des derniers mois. Il n\'y a pas de bonne ni de mauvaise réponse : répondez le plus spontanément possible, selon ce qui vous correspond.</p>'
+    +'<p class="timing"><span class="ti">⏱️</span><span>Comptez environ 15 à 20 minutes au total. Vos réponses ne sont transmises qu\'à la toute fin, au moment d\'envoyer votre document.</span></p>'
+    +'</div>'
+    +'<div class="saveinfo"><div class="si-ic">💾</div><div class="si-body">'
+    +'<span class="si-t">Vous pouvez faire une pause quand vous voulez</span>'
+    +'<p>Attention : vos réponses s\'effacent si vous fermez cette page. Pour les garder et continuer plus tard :</p>'
+    +'<ul>'
+    +'<li>📥 Cliquez sur <strong>Enregistrer</strong> (en haut à droite). Un petit fichier au format <span class="fmt">.json</span> est téléchargé sur votre appareil — gardez-le précieusement.</li>'
+    +'<li>📂 Pour reprendre, rouvrez cette page, cliquez sur <strong>Reprendre</strong> et choisissez ce fichier <span class="fmt">.json</span> : vous repartirez exactement là où vous vous étiez arrêté(e).</li>'
+    +'</ul>'
+    +'<button class="btn ghost" id="resumeBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Reprendre une sauvegarde</button>'
+    +'</div></div>'
+    +'<div class="card"><h2>Vos informations</h2>'
+    +'<p class="muted" style="margin-bottom:12px">Elles figureront en tête du document transmis au praticien.</p>'
+    +'<div class="row2">'
+    +'<div class="field"><label for="f_nom">Nom</label><input id="f_nom" type="text" autocomplete="off" value="'+esc(state.id.nom)+'"></div>'
+    +'<div class="field"><label for="f_prenom">Prénom</label><input id="f_prenom" type="text" autocomplete="off" value="'+esc(state.id.prenom)+'"></div>'
+    +'</div><div class="row2">'
+    +'<div class="field"><label for="f_naissance">Date de naissance</label><input id="f_naissance" type="date" value="'+esc(state.id.naissance)+'"></div>'
+    +'<div class="field"><label for="f_dateJour">Date du jour</label><input id="f_dateJour" type="date" value="'+esc(state.id.dateJour)+'"></div>'
+    +'</div></div>'
+    +'<div class="card"><h2>Les questionnaires</h2>'
+    +'<p class="muted" style="margin-bottom:12px">Vous pouvez les compléter dans l\'ordre, ou reprendre celui de votre choix. Cliquez pour ouvrir.</p>'
+    +cards+'</div>'
+    +'<div style="margin:4px 2px 0"><button class="bigstart" id="startBtn">'
+    +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
+    +(totalAnswered()>0?'Reprendre où j\'en étais':'Commencer le premier questionnaire')+'</button></div>';
+
+  if(!state.id.dateJour){ state.id.dateJour=todayISO(); const el=document.getElementById('f_dateJour'); if(el) el.value=state.id.dateJour; }
+  const map={f_nom:'nom',f_prenom:'prenom',f_naissance:'naissance',f_dateJour:'dateJour'};
+  Object.keys(map).forEach(id=>{ const el=document.getElementById(id); el.addEventListener('input',e=>{ state.id[map[id]]=e.target.value; refreshChrome(); }); });
+  const hasProgress=totalAnswered()>0;
+  app.querySelectorAll('.qcard').forEach(b=>b.onclick=()=>openQ(+b.dataset.i));
+  document.getElementById('resumeBtn').onclick=openLoad;
+  document.getElementById('startBtn').onclick=()=>{
+    if(hasProgress){ openLoad(); return; }
+    const t=Q.findIndex(q=>!isComplete(q.id)); openQ(t<0?0:t);
+  };
+}
+
+/* ---------- Questionnaire (passation patient) ---------- */
+function renderQuest(){
+  const i=state.qi, q=Q[i], n=q.items.length, a=answered(q.id);
+  let head='<tr><th class="h-num"></th><th class="h-item">Affirmation</th>';
+  q.opts.forEach(o=>head+='<th>'+esc(o)+'</th>');
+  head+='<th class="h-cm"></th></tr>';
+
+  let rows='';
+  q.items.forEach((it,idx)=>{
+    const sel=state.ans[q.id][idx];
+    const hasC=(state.comments[q.id][idx]||'').trim().length>0;
+    let cells='';
+    q.opts.forEach((o,ci)=>{
+      cells+='<td class="cellradio'+(sel===ci?' on':'')+'" data-q="'+q.id+'" data-i="'+idx+'" data-c="'+ci+'" role="button" aria-label="'+esc(o)+'"><span class="tick"></span></td>';
+    });
+    rows+='<tr id="row-'+idx+'">'
+      +'<td class="itemnum"><span>'+it.n+'</span></td>'
+      +'<td class="itemtext">'+esc(it.text)+'</td>'
+      +cells
+      +'<td style="text-align:center"><button class="cbtn'+(hasC?' has':'')+'" data-cm="'+idx+'" title="Ajouter une remarque (facultatif)">&#128172;</button></td>'
+      +'</tr>';
+    if(hasC){
+      rows+='<tr class="cmtrow" id="cmt-'+idx+'"><td colspan="'+(q.opts.length+3)+'"><div class="cmtbox">'
+        +'<label>Votre remarque (facultatif)</label>'
+        +'<textarea data-ta="'+idx+'">'+esc(state.comments[q.id][idx])+'</textarea></div></td></tr>';
+    }
+  });
+
+  const isLast=(i===Q.length-1);
+  app.innerHTML='<div class="masthead">'
+    +'<div class="kicker">Questionnaire '+(i+1)+' sur '+Q.length+'</div>'
+    +'<h1>'+esc(q.short)+'</h1>'
+    +'<div class="subtitle">'+esc(q.subtitle||'')+'</div>'
+    +'<div class="rule"></div></div>'
+    +'<div class="instr">'+esc(q.instruction)+'</div>'
+    +'<div class="tblwrap"><table class="likert"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div>'
+    +'<p class="qprog" id="qprog">'+a+' / '+n+' réponses</p>'
+    +'<div class="actions">'
+    +'<button class="btn ghost" id="prevBtn">'
+    +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>'
+    +(i===0?'Accueil':'Précédent')+'</button>'
+    +'<span class="gap"></span>'
+    +(isLast
+        ? '<button class="btn" id="nextBtn">Terminer et transmettre<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>'
+        : '<button class="btn" id="nextBtn">Suivant<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>')
+    +'</div>';
+
+  // Cases Likert
+  app.querySelectorAll('.cellradio').forEach(td=>{
+    td.onclick=()=>{
+      const idx=+td.dataset.i, ci=+td.dataset.c;
+      state.ans[q.id][idx] = (state.ans[q.id][idx]===ci) ? null : ci;
+      const row=document.getElementById('row-'+idx);
+      row.querySelectorAll('.cellradio').forEach(c=>c.classList.toggle('on', +c.dataset.c===state.ans[q.id][idx]));
+      row.classList.remove('miss');
+      document.getElementById('qprog').textContent = answered(q.id)+' / '+n+' réponses';
+      renderSidebar();
+    };
+  });
+  // Boutons commentaire
+  app.querySelectorAll('[data-cm]').forEach(b=>b.onclick=()=>toggleComment(+b.dataset.cm,q.id));
+  app.querySelectorAll('[data-ta]').forEach(ta=>ta.addEventListener('input',e=>{ state.comments[q.id][+e.target.dataset.ta]=e.target.value; }));
+  // Navigation
+  document.getElementById('prevBtn').onclick=()=>{ if(i===0) goHome(); else openQ(i-1); };
+  document.getElementById('nextBtn').onclick=()=>{ if(isLast) trySend(); else openQ(i+1); };
+}
+
+function toggleComment(idx,qid){
+  const existing=document.getElementById('cmt-'+idx);
+  const btn=document.querySelector('[data-cm="'+idx+'"]');
+  if(existing){
+    if(!(state.comments[qid][idx]||'').trim()){ existing.remove(); btn.classList.remove('has'); }
+    return;
+  }
+  const cols=QMAP[qid].opts.length+3;
+  const tr=document.createElement('tr');
+  tr.className='cmtrow'; tr.id='cmt-'+idx;
+  tr.innerHTML='<td colspan="'+cols+'"><div class="cmtbox"><label>Votre remarque (facultatif)</label><textarea data-ta="'+idx+'">'+esc(state.comments[qid][idx])+'</textarea></div></td>';
+  document.getElementById('row-'+idx).after(tr);
+  btn.classList.add('has');
+  const ta=tr.querySelector('textarea');
+  ta.addEventListener('input',e=>{ state.comments[qid][idx]=e.target.value; });
+  ta.addEventListener('blur',()=>{ if(!ta.value.trim()){ tr.remove(); btn.classList.remove('has'); } });
+  ta.focus();
+}
+
+/* ============================================================
+   CONTRÔLE DE COMPLÉTUDE + ENVOI
+   ============================================================ */
+function incompleteInfo(){
+  const missQ=[]; let firstQ=-1, firstItem=-1;
+  Q.forEach((q,qi)=>{
+    const miss=[]; state.ans[q.id].forEach((v,idx)=>{ if(v===null) miss.push(idx); });
+    if(miss.length){ missQ.push({qi,short:q.short,count:miss.length,items:miss}); if(firstQ<0){firstQ=qi;firstItem=miss[0];} }
+  });
+  return {missQ,firstQ,firstItem};
+}
+function trySend(){
+  const info=incompleteInfo();
+  if(info.missQ.length===0){ doSend(); return; }
+  const total=info.missQ.reduce((s,m)=>s+m.count,0);
+  const list=info.missQ.map(m=>'<li>'+esc(m.short)+' — '+m.count+' question'+(m.count>1?'s':'')+'</li>').join('');
+  openModal(
+    '<h3>Il reste des réponses à compléter</h3>'
+    +'<p>'+total+' question'+(total>1?'s n\'ont':' n\'a')+' pas encore de réponse :</p>'
+    +'<ul>'+list+'</ul>'
+    +'<p>Vous pouvez y revenir, ou transmettre quand même votre document tel quel.</p>'
+    +'<div class="ma">'
+    +'<button class="btn ghost" id="mGoto">Aller à la 1ʳᵉ question manquante</button>'
+    +'<button class="btn" id="mSendAnyway">Transmettre quand même</button>'
+    +'</div>'
+  );
+  document.getElementById('mGoto').onclick=()=>{
+    closeModal();
+    openQ(info.firstQ);
+    setTimeout(()=>{ const row=document.getElementById('row-'+info.firstItem); if(row){ row.classList.add('miss'); row.scrollIntoView({behavior:'smooth',block:'center'}); } },120);
+  };
+  document.getElementById('mSendAnyway').onclick=()=>{ closeModal(); doSend(); };
+}
+function doSend(){ state._code=makeCode(); buildPrintDoc(); goThanks(); }
+
+/* ============================================================
+   CODE DE TRANSMISSION (relu par le fichier de cotation)
+   ============================================================ */
+function compact(){
+  const a={}, c={};
+  Q.forEach(q=>{
+    a[q.id]=state.ans[q.id].map(v=>v===null?'-':String(v)).join('');
+    const cm={};
+    state.comments[q.id].forEach((t,idx)=>{ if((t||'').trim()) cm[idx]=t; });
+    if(Object.keys(cm).length) c[q.id]=cm;
+  });
+  return {v:3, ts:new Date().toISOString(), id:state.id, a, c};
+}
+function makeCode(){ return CODE_PREFIX + btoa(unescape(encodeURIComponent(JSON.stringify(compact())))); }
+
+/* ============================================================
+   DOCUMENT IMPRIMABLE (PDF)
+   ============================================================ */
+function buildPrintDoc(){
+  const id=state.id;
+  let h='<div class="p-title">Auto-questionnaires — Bilan TDAH</div>'
+    +'<div class="p-sub">Document généré le '+frDate(todayISO())+' — à transmettre au praticien</div>'
+    +'<table class="p-id">'
+    +'<tr><td class="k">Nom</td><td>'+esc(id.nom||'—')+'</td><td class="k">Prénom</td><td>'+esc(id.prenom||'—')+'</td></tr>'
+    +'<tr><td class="k">Date de naissance</td><td>'+esc(frDate(id.naissance)||'—')+'</td><td class="k">Date de passation</td><td>'+esc(frDate(id.dateJour)||'—')+'</td></tr>'
+    +'</table>';
+
+  Q.forEach(q=>{
+    h+='<div class="p-q"><h2>'+esc(q.title)+'</h2><table class="p-tbl">'
+      +'<thead><tr><th class="c">N°</th><th>Affirmation</th><th>Réponse</th></tr></thead><tbody>';
+    q.items.forEach((it,idx)=>{
+      const sel=state.ans[q.id][idx];
+      const lab = sel===null ? '— (non répondu)' : q.opts[sel];
+      h+='<tr'+(sel===null?' class="miss"':'')+'><td class="n">'+it.n+'</td><td>'+esc(it.text)+'</td><td class="a">'+esc(lab)+'</td></tr>';
+      const cm=state.comments[q.id][idx];
+      if((cm||'').trim()) h+='<tr><td colspan="3" class="p-cmt">Remarque : '+esc(cm)+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  });
+
+  h+='<div class="p-code"><div class="p-code-h">Code de transmission — ne pas modifier</div>'
+    +'<div class="p-code-note">Ce code permet au praticien de réimporter automatiquement l\'ensemble des réponses dans son outil de cotation.</div>'
+    +'<div class="p-code-val">'+esc(state._code)+'</div></div>'
+    +'<div class="p-foot">Outils conçus par le Dr Clémentine Doussy — à usage soignant, dans le cadre de consultations spécialisées.</div>';
+
+  document.getElementById('printdoc').innerHTML=h;
+}
+function generatePdf(){
+  buildPrintDoc();
+  const prev=document.title;
+  document.title=baseName();      // pré-remplit le nom dans la boîte « Enregistrer au format PDF »
+  window.print();
+  setTimeout(()=>{ document.title=prev; }, 800);
+}
+
+/* ============================================================
+   PAGE DE FIN (remerciement + PDF + e-mail éditable)
+   ============================================================ */
+function baseName(){
+  const clean=s=>String(s||'').trim().replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,'-');
+  const nom=clean(state.id.nom), prenom=clean(state.id.prenom);
+  const b=[nom,prenom].filter(Boolean).join('_');
+  return (b||'patient')+'_auto-questionnairesTDAH';
+}
+function mailParts(){
+  const who=((state.id.nom||'').toUpperCase()+' '+(state.id.prenom||'')).trim()||'(identité à compléter)';
+  const subject='Auto-questionnaires TDAH — '+who;
+  const body=
+    'Bonjour,\n\n'
+    +'Veuillez trouver ci-joint le document PDF de mes auto-questionnaires (WURS, ASRS).\n\n'
+    +'Nom : '+(state.id.nom||'—')+'\n'
+    +'Prénom : '+(state.id.prenom||'—')+'\n'
+    +'Date de naissance : '+(frDate(state.id.naissance)||'—')+'\n'
+    +'Date de passation : '+(frDate(state.id.dateJour)||'—')+'\n\n'
+    +'Cordialement.';
+  return {subject,body};
+}
+function renderThanks(){
+  const {subject,body}=mailParts();
+  const dest=state.destEmail||DEST_DEFAULT;
+  const isDefault=(dest===DEST_DEFAULT);
+
+  app.innerHTML='<div class="card"><div class="thanks-hero">'
+    +'<div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>'
+    +'<div class="masthead" style="margin:0"><div class="kicker" style="text-align:center">C\'est terminé — merci</div>'
+    +'<h1 style="font-size:25px">Plus que deux étapes</h1></div>'
+    +'<p class="muted" style="max-width:54ch;margin:8px auto 0">Générez votre document, puis envoyez-le. Le PDF contient toutes vos réponses ainsi qu\'un code qui permet au praticien de les réimporter.</p>'
+    +'</div></div>'
+
+    +'<div class="card">'
+    +'<div class="step"><span class="sn">1</span><div class="sb">'
+    +'<h3>Générer le document PDF</h3>'
+    +'<p>Dans la fenêtre qui s\'ouvre, choisissez « Enregistrer au format PDF » comme destination, puis validez. Le fichier est nommé automatiquement.</p>'
+    +'<button class="btn" id="pdfBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2V11a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>Générer le PDF</button>'
+    +'</div></div>'
+
+    +'<div class="step"><span class="sn">2</span><div class="sb">'
+    +'<h3>Envoyer le PDF par e-mail</h3>'
+    +'<p>Ouvrez votre messagerie ci-dessous, puis <strong>joignez le PDF</strong> que vous venez d\'enregistrer avant d\'envoyer.</p>'
+    +'<div class="emailpick" id="emailPick">'
+    +'<label class="er"><input type="radio" name="dest" value="default"'+(isDefault?' checked':'')+'><span>Adresse du praticien<span class="ed">'+esc(DEST_DEFAULT)+'</span></span></label>'
+    +'<label class="er"><input type="radio" name="dest" value="custom"'+(!isDefault?' checked':'')+'><span>Une autre adresse (à saisir)</span></label>'
+    +'<input type="email" id="customEmail" placeholder="prenom.nom@exemple.fr" value="'+esc(isDefault?'':dest)+'"'+(isDefault?' style="display:none"':'')+'>'
+    +'</div>'
+    +'<div class="dest-now" id="destNow">Destinataire : '+esc(dest)+'</div>'
+    +'<div class="mailrow">'
+    +'<a class="btn" id="gmailBtn" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>Ouvrir dans Gmail</a>'
+    +'<a class="btn ghost" id="outlookBtn" target="_blank" rel="noopener">Ouvrir dans Outlook</a>'
+    +'<a class="btn ghost" id="icloudBtn" target="_blank" rel="noopener">Ouvrir dans iCloud Mail</a>'
+    +'</div>'
+    +'<div class="copyblock">'
+    +'<p class="cb-h">📋 Vous utilisez une autre messagerie ?</p>'
+    +'<p class="cb-note">Copiez le texte ci-dessous et collez-le dans un nouvel e-mail adressé à <strong id="cbDest">'+esc(dest)+'</strong>. Pensez surtout à <strong>joindre le fichier PDF</strong> avant de l\'envoyer.</p>'
+    +'<div class="cb-sub">Objet : <span id="cbSubject">'+esc(subject)+'</span></div>'
+    +'<textarea id="cbBody" readonly>'+esc(body)+'</textarea>'
+    +'<button class="btn ghost copybtn" id="copyBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copier le texte</button>'
+    +'</div>'
+    +'</div></div>'
+    +'</div>'
+
+    +'<div style="display:flex;gap:12px;flex-wrap:wrap;margin:2px 2px">'
+    +'<button class="btn ghost" id="backBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Revenir aux questionnaires</button>'
+    +'<button class="btn ghost" id="saveBtn2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Enregistrer une copie (.json)</button>'
+    +'</div>';
+
+  function links(){
+    const dest=state.destEmail||DEST_DEFAULT;
+    const enc=encodeURIComponent;
+    document.getElementById('gmailBtn').href='https://mail.google.com/mail/?view=cm&fs=1&to='+enc(dest)+'&su='+enc(subject)+'&body='+enc(body);
+    document.getElementById('outlookBtn').href='https://outlook.office.com/mail/deeplink/compose?to='+enc(dest)+'&subject='+enc(subject)+'&body='+enc(body);
+    document.getElementById('icloudBtn').href='https://www.icloud.com/mail/';
+    document.getElementById('destNow').textContent='Destinataire : '+dest;
+    document.getElementById('cbDest').textContent=dest;
+  }
+  links();
+
+  const custom=document.getElementById('customEmail');
+  document.querySelectorAll('input[name=dest]').forEach(r=>r.addEventListener('change',e=>{
+    if(e.target.value==='custom'){ custom.style.display='block'; state.destEmail=custom.value.trim()||DEST_DEFAULT; custom.focus(); }
+    else { custom.style.display='none'; state.destEmail=DEST_DEFAULT; }
+    links();
+  }));
+  custom.addEventListener('input',e=>{ state.destEmail=e.target.value.trim()||DEST_DEFAULT; links(); });
+
+  document.getElementById('copyBtn').onclick=()=>{
+    const ta=document.getElementById('cbBody');
+    const done=()=>{ const b=document.getElementById('copyBtn'); const o=b.innerHTML; b.innerHTML='✓ Texte copié'; setTimeout(()=>b.innerHTML=o,1800); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(ta.value).then(done).catch(()=>{ ta.focus(); ta.select(); try{document.execCommand('copy');}catch(e){} done(); });
+    } else { ta.focus(); ta.select(); try{document.execCommand('copy');}catch(e){} done(); }
+  };
+  document.getElementById('pdfBtn').onclick=generatePdf;
+  document.getElementById('backBtn').onclick=()=>{ const t=Q.findIndex(q=>!isComplete(q.id)); openQ(t<0?Q.length-1:t); };
+  document.getElementById('saveBtn2').onclick=saveSession;
+}
+
+/* ============================================================
+   ENREGISTRER / REPRENDRE (.json)
+   ============================================================ */
+function saveSession(){
+  const data={app:APP_ID, v:1, savedAt:new Date().toISOString(), id:state.id, ans:state.ans, comments:state.comments, destEmail:state.destEmail};
+  const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=baseName()+'_sauvegarde.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  toast('Session enregistrée');
+}
+function loadSession(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(d.app!==APP_ID) throw 0;
+      state.id=Object.assign({nom:"",prenom:"",naissance:"",dateJour:""}, d.id||{});
+      const fa=freshArrays();
+      Q.forEach(q=>{
+        const n=q.items.length;
+        const src=(d.ans&&d.ans[q.id])||[];
+        fa.ans[q.id]=Array.from({length:n},(_,k)=> (src[k]===0||src[k]) && src[k]!==null ? src[k] : null);
+        const sc=(d.comments&&d.comments[q.id])||[];
+        fa.comments[q.id]=Array.from({length:n},(_,k)=> sc[k]||"");
+      });
+      state.ans=fa.ans; state.comments=fa.comments;
+      if(d.destEmail) state.destEmail=d.destEmail;
+      const t=Q.findIndex(q=>!isComplete(q.id));
+      if(totalAnswered()>0 && t>=0) openQ(t); else goHome();
+      toast('Session reprise');
+    }catch(e){ toast('Fichier non reconnu'); }
+  };
+  r.readAsText(file);
+}
+function openLoad(){ document.getElementById('loadInput').click(); }
+document.getElementById('saveBtn').onclick=saveSession;
+document.getElementById('loadBtn').onclick=openLoad;
+document.getElementById('loadInput').addEventListener('change',e=>{ if(e.target.files[0]) loadSession(e.target.files[0]); e.target.value=''; });
+
+/* ============================================================
+   MODALE
+   ============================================================ */
+function openModal(html){ const m=document.getElementById('modal'); document.getElementById('modalbox').innerHTML=html; m.classList.add('on'); }
+function closeModal(){ document.getElementById('modal').classList.remove('on'); }
+document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeModal(); });
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function setTopbarH(){
+  const tb=document.querySelector('.topbar');
+  const h=tb?tb.offsetHeight:50;
+  document.documentElement.style.setProperty('--topbar-h', h+'px');
+}
+window.addEventListener('resize', setTopbarH);
+setTopbarH();
+state.id.dateJour=todayISO();
+applyAccent(HOME_PAL);
+render();
+</script>
+</body>
+</html>
